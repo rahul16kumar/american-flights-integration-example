@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+    xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+    xmlns:http="http://www.mulesoft.org/schema/mule/http"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:db="http://www.mulesoft.org/schema/mule/db"
+    xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+    http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+    http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+	http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd">
+  <http:listener-config name="inbound-request" doc:name="Listener Config" doc:id="5ac9e4-72dcaa">
+    <http:listener-connection host="0.0.0.0" port="8081"/>
+  </http:listener-config>
+  <db:config name="Mysql_Database_Config" doc:name="mySQL DB" doc:id="66a244-07f3e4">
+    <db:my-sql-connection host="mudb.learn.mulesoft.com" port="3306" user="mule" password="mule" database="training" />
+  </db:config>
+  <flow name="getFlights" >
+    <db:select config-ref="Mysql_Database_Config" doc:name="Query Flights" doc:id="1d36d7-ea8221">
+      <db:sql>
+        <![CDATA[Select * FROM american]]>
+      </db:sql>
+    </db:select>
+    <set-variable value="#[payload]" variableName="databasePayload" doc:name="Set variable Payload" doc:id="sprpdo" />
+    <ee:transform doc:name="Transform Message" doc:id="51fed3-afee8c">
+      <ee:message>
+        <ee:set-payload>
+          <![CDATA[
+          %dw 2.0
+          output application/json
+          ---
+           payload map ( payload01 , indexOfPayload01 ) -> {
+            ID: payload01.ID,
+            code: (payload01.code1 default "") ++ (payload01.code2 default ""),
+            price: payload01.price default 0,
+            departureDate: payload01.takeOffDate as String default "",
+            origin: payload01.fromAirport default "",
+            destination: payload01.toAirport default "",
+            emptySeats: payload01.seatsAvailable default 0,
+            plane: {
+              "type": payload01.planeType default "",
+              totalSeats: payload01.totalSeats default 0
+            }
+           }
+          ]]>
+        </ee:set-payload>
+      </ee:message>
+    </ee:transform>
+    <logger doc:name="Log Payload" message="#[
+    %dw 2.0
+    output application/json
+    ---
+    payload]" doc:id="qeypar" />  
+</flow>
+        
+</mule>
